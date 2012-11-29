@@ -1,0 +1,63 @@
+<?php
+
+  function var_export_features_api() {
+    return array(
+      "vars" => array(
+          'name' => t('Variables'),
+          'default_hook' => 'var_default_settings',
+          'feature_source' => TRUE
+      )
+    );
+  }
+
+  function vars_features_export_options() {
+    $options = array();
+    $rs = db_query("SELECT * FROM {variable} ORDER BY `name`");
+    foreach ($rs as $row) {
+      $options[$row->name] = $row->name;
+    }
+    return $options;
+  }
+
+  function vars_features_export($data, &$export, $module_name) {
+    foreach ($data as $varname) {
+      $export["features"]["vars"][$varname] = $varname;
+    }
+  }
+
+  function vars_features_export_render($module_name, $data, $export = null) {
+    $code = array();
+    $code[] = '  $data = array();';
+    $code[] = '';
+    $rs = db_query("SELECT * FROM {variable} ORDER BY `name`");
+    $variables = array();
+    foreach ($rs as $row) {
+      $variables[$row->name] = $row->value;
+    }
+    foreach ($data as $varname) {
+      $info = array(
+        "varname" => $varname,
+        "varinfo" => $variables[$varname]
+      );
+      $code[] = '  $data[] = ' . features_var_export($info) . ';';
+    }
+    $code[] = '  return $data;';
+    return array("var_default_settings" => implode("\n", $code));
+  }
+
+  function vars_features_rebuild($module) {
+    $items = module_invoke($module, 'var_default_settings');
+    foreach ($items as $item) {
+      db_merge("variable")
+      ->fields(array(
+        "name" => $item["varname"],
+        "value" => $item["varinfo"]
+      ))
+      ->key(array("name" => $item["varname"]))
+      ->execute();
+    }
+  }
+
+  function vars_features_revert($module) {
+    vars_features_rebuild($module);
+  }

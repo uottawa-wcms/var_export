@@ -1,0 +1,12 @@
+name = "Variable Export"
+description = "Allows basic export of variables"
+package = "Features"
+core = 7.x
+
+dependencies[] = features
+
+
+files[] = var_export.module
+
+
+version = "7.x-1.0"
